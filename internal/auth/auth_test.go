@@ -38,6 +38,8 @@ func TestMakeAndValidateJWT(t *testing.T) {
 		t.Fatalf("ValidateJWT returned non-nil user ID for expired token")
 	}
 
+	// Case 3: wrong secret
+
 	wrongSecretToken, _ := MakeJWT(userID, "mysecret", time.Hour)
 	gotID, err := ValidateJWT(wrongSecretToken, "wrongsecret")
 
