@@ -7,6 +7,9 @@ package database
 
 import (
 	"context"
+	"time"
+
+	"github.com/google/uuid"
 )
 
 const createUser = `-- name: CreateUser :one
@@ -41,6 +44,24 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
+const getRefreshToken = `-- name: GetRefreshToken :one
+SELECT token, user_id, expires_at, revoked_at, created_at, updated_at FROM refresh_tokens WHERE token = $1 AND revoked_at IS NULL
+`
+
+func (q *Queries) GetRefreshToken(ctx context.Context, token string) (RefreshToken, error) {
+	row := q.db.QueryRowContext(ctx, getRefreshToken, token)
+	var i RefreshToken
+	err := row.Scan(
+		&i.Token,
+		&i.UserID,
+		&i.ExpiresAt,
+		&i.RevokedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getUserByEmail = `-- name: GetUserByEmail :one
 SELECT id, email, created_at, updated_at, hashed_password FROM users WHERE email = $1
 `
@@ -65,4 +86,47 @@ DELETE FROM users
 func (q *Queries) Reset(ctx context.Context) error {
 	_, err := q.db.ExecContext(ctx, reset)
 	return err
+}
+
+const revokeRefreshToken = `-- name: RevokeRefreshToken :exec
+UPDATE refresh_tokens SET revoked_at = NOW() WHERE token = $1
+`
+
+func (q *Queries) RevokeRefreshToken(ctx context.Context, token string) error {
+	_, err := q.db.ExecContext(ctx, revokeRefreshToken, token)
+	return err
+}
+
+const saveRefreshToken = `-- name: SaveRefreshToken :one
+INSERT INTO refresh_tokens (user_id, created_at, updated_at, token, expires_at)
+
+VALUES (
+	$1,
+	NOW(),
+	NOW(),
+	$2,
+	$3
+)
+
+RETURNING token, user_id, expires_at, revoked_at, created_at, updated_at
+`
+
+type SaveRefreshTokenParams struct {
+	UserID    uuid.UUID
+	Token     string
+	ExpiresAt time.Time
+}
+
+func (q *Queries) SaveRefreshToken(ctx context.Context, arg SaveRefreshTokenParams) (RefreshToken, error) {
+	row := q.db.QueryRowContext(ctx, saveRefreshToken, arg.UserID, arg.Token, arg.ExpiresAt)
+	var i RefreshToken
+	err := row.Scan(
+		&i.Token,
+		&i.UserID,
+		&i.ExpiresAt,
+		&i.RevokedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }

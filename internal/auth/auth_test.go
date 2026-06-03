@@ -2,7 +2,6 @@ package auth
 
 import (
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
 )
@@ -10,7 +9,7 @@ import (
 func TestMakeAndValidateJWT(t *testing.T) {
 	userID := uuid.New()
 
-	token, err := MakeJWT(userID, "mysecret", time.Hour)
+	token, err := MakeJWT(userID, "mysecret")
 
 	if err != nil {
 		t.Fatalf("MakeJWT failed: %v", err)
@@ -26,21 +25,9 @@ func TestMakeAndValidateJWT(t *testing.T) {
 		t.Fatalf("ValidateJWT returned incorrect user ID")
 	}
 
-	// Case 2: expired token
-	expiredToken, _ := MakeJWT(userID, "mysecret", -time.Second)
-	userId, err = ValidateJWT(expiredToken, "mysecret")
+	// Case 2: wrong secret
 
-	if err == nil {
-		t.Fatalf("ValidateJWT did not return error for expired token")
-	}
-
-	if userId != uuid.Nil {
-		t.Fatalf("ValidateJWT returned non-nil user ID for expired token")
-	}
-
-	// Case 3: wrong secret
-
-	wrongSecretToken, _ := MakeJWT(userID, "mysecret", time.Hour)
+	wrongSecretToken, _ := MakeJWT(userID, "mysecret")
 	gotID, err := ValidateJWT(wrongSecretToken, "wrongsecret")
 
 	if err == nil {

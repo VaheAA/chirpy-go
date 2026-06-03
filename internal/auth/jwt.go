@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"net/http"
 	"time"
 
@@ -8,16 +10,12 @@ import (
 	"github.com/google/uuid"
 )
 
-func MakeJWT(userID uuid.UUID, tokenSecret string, expiresIn time.Duration) (string, error) {
-
-	if expiresIn == 0 {
-		expiresIn = time.Hour
-	}
+func MakeJWT(userID uuid.UUID, tokenSecret string) (string, error) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
 		Issuer:    "chirpy-access",
 		Subject:   userID.String(),
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(expiresIn)),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
 		IssuedAt:  jwt.NewNumericDate(time.Now()),
 	})
 
@@ -57,4 +55,19 @@ func GetBearerToken(headers http.Header) (string, error) {
 		return "", nil
 	}
 	return bearer[7:], nil
+}
+
+func GetRefreshToken(headers http.Header) (string, error) {
+	refreshToken := headers.Get("Authorization")
+	if refreshToken == "" {
+		return "", nil
+	}
+	return refreshToken[7:], nil
+}
+
+func MakeRefreshToken() string {
+	key := make([]byte, 32)
+	rand.Read(key)
+
+	return hex.EncodeToString(key)
 }

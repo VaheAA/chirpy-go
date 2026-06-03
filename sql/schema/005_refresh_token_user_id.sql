@@ -1,0 +1,2 @@
+-- +goose Up
+ALTER TABLE refresh_tokens ALTER COLUMN user_id SET NOT NULL;
