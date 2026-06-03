@@ -39,3 +39,6 @@ SELECT * FROM refresh_tokens WHERE token = $1 AND revoked_at IS NULL;
 
 -- name: RevokeRefreshToken :exec
 UPDATE refresh_tokens SET revoked_at = NOW() WHERE token = $1;
+
+-- name: UpdateUser :one
+UPDATE users SET updated_at = NOW(), hashed_password = $2, email = $3 WHERE id = $1 RETURNING *;
