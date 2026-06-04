@@ -42,3 +42,6 @@ UPDATE refresh_tokens SET revoked_at = NOW() WHERE token = $1;
 
 -- name: UpdateUser :one
 UPDATE users SET updated_at = NOW(), hashed_password = $2, email = $3 WHERE id = $1 RETURNING *;
+
+-- name: UpdateUserStatus :one
+UPDATE users SET updated_at = NOW(), is_chirpy_red = true WHERE id = $1 RETURNING *;
